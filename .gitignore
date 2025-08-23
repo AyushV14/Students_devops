@@ -1,0 +1,42 @@
+# Node modules
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+
+# Database files
+*.sqlite
+*.db
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Build files
+dist/
+build/
+
+# IDE/editor specific files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Jest coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Postman collection exports (optional, if you don't want to commit)
+# postman_collection.json
