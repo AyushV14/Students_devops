@@ -10,6 +10,11 @@ on:
 jobs:
   build-test-lint:
     runs-on: self-hosted
+    env:               # <-- option 1: job-level env
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
 
     steps:
       - name: Checkout code
@@ -27,6 +32,11 @@ jobs:
   docker:
     runs-on: self-hosted
     needs: build-test-lint
+    env:               # <-- also here if docker build needs DB vars
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
 
     steps:
       - name: Checkout code
