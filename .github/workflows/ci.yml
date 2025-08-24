@@ -25,11 +25,11 @@ jobs:
         run: make compose-build-api
   
       - name: Run tests
-        shell: powershell
+        shell: cmd
         run: make test
   
       - name: Lint code
-        shell: powershell
+        shell: cmd
         run: make lint
 
 
