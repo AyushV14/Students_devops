@@ -10,25 +10,28 @@ on:
 jobs:
   build-test-lint:
     runs-on: self-hosted
-    env:               # <-- option 1: job-level env
+    env:
       DB_NAME: ${{ secrets.DB_NAME }}
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
-
+  
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
+  
       - name: Build API
-        shell: pwsh
+        shell: powershell
         run: powershell -ExecutionPolicy Bypass -Command "make compose-build-api"
-
+  
       - name: Run tests
+        shell: powershell
         run: make test
-
+  
       - name: Lint code
+        shell: powershell
         run: make lint
+
 
   docker:
     runs-on: self-hosted
