@@ -26,6 +26,7 @@ jobs:
           node-version: 20   
 
       - name: Install dependencies
+        shell: cmd
         run: npm install
 
       - name: Build API
