@@ -12,7 +12,7 @@ test:
 	npm test
 # Run linter (ESLint) with legacy config support
 lint:
-	npx eslint src --ext .js --config .eslintrc.json
+	set ESLINT_USE_FLAT_CONFIG=false && npx eslint src --ext .js
 # Run database migrations locally
 migrate:
 	mysql -u $(DB_USER) -p$(DB_PASSWORD) -h $(DB_HOST) $(DB_NAME) < migrations/create_students_table.sql
@@ -77,7 +77,7 @@ compose-test:
 	docker-compose down -v || true
 # Run lint inside the API container (CI-safe)
 compose-lint:
-	docker-compose run --rm api npx eslint src --ext .js --config .eslintrc.json
+	docker-compose run --rm api sh -c "ESLINT_USE_FLAT_CONFIG=false npx eslint src --ext .js"
 # Build Docker image for pushing to registry
 docker-build:
 	docker build -t $(DOCKER_USERNAME)/students-api:latest .
