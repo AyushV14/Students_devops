@@ -78,4 +78,7 @@ jobs:
 
       - name: Push Docker image
         shell: cmd
-        run: make docker-push
+        run: make docker-push DOCKER_USERNAME=%DOCKER_USERNAME%
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
