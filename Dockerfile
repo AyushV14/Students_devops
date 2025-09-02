@@ -10,6 +10,7 @@ RUN npm install
 COPY src ./src
 COPY migrations ./migrations
 COPY tests ./tests
+COPY .eslintrc.json ./
 
 # Stage 2: Production
 FROM node:20-alpine AS production
