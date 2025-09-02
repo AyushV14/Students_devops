@@ -10,9 +10,9 @@ dev:
 # Run unit tests locally
 test:
 	npm test
-# Run linter (ESLint)
+# Run linter (ESLint) with legacy config support
 lint:
-	npx eslint src --ext .js
+	npx eslint src --ext .js --config .eslintrc.json
 # Run database migrations locally
 migrate:
 	mysql -u $(DB_USER) -p$(DB_PASSWORD) -h $(DB_HOST) $(DB_NAME) < migrations/create_students_table.sql
@@ -69,17 +69,15 @@ compose-restart-all: compose-stop-all compose-run-api
 # Debug: Check what files are in the container
 compose-debug:
 	docker-compose run --rm api sh -c "ls -la && ls -la tests/ || echo 'tests directory not found'"
-
 # Run tests inside the API container (CI-safe)
 compose-test:
 	docker-compose down -v || true
 	docker-compose build api
 	docker-compose run --rm api npm test
 	docker-compose down -v || true
-
 # Run lint inside the API container (CI-safe)
 compose-lint:
-	docker-compose run --rm api npx eslint src --ext .js
+	docker-compose run --rm api npx eslint src --ext .js --config .eslintrc.json
 # Build Docker image for pushing to registry
 docker-build:
 	docker build -t $(DOCKER_USERNAME)/students-api:latest .
