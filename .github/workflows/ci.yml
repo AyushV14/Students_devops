@@ -71,7 +71,10 @@ jobs:
 
       - name: Build Docker image
         shell: cmd
-        run: make docker-build
+        run: make docker-build DOCKER_USERNAME=%DOCKER_USERNAME%
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Push Docker image
         shell: cmd
