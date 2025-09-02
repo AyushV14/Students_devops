@@ -19,7 +19,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-  
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20   
+
+      - name: Install dependencies
+        run: npm install
+
       - name: Build API
         shell: cmd
         run: make compose-build-api
@@ -36,7 +44,7 @@ jobs:
   docker:
     runs-on: self-hosted
     needs: build-test-lint
-    env:               # <-- also here if docker build needs DB vars
+    env:
       DB_NAME: ${{ secrets.DB_NAME }}
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
