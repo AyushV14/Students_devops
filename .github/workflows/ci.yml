@@ -20,26 +20,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20   
-
+      # Still install dependencies on host (for linting tools etc.)
       - name: Install dependencies
         shell: cmd
         run: npm install
 
-      - name: Build API
+      - name: Build API (Docker)
         shell: cmd
         run: make compose-build-api
   
-      - name: Run tests
+      - name: Run tests (inside Docker)
         shell: cmd
-        run: make test
+        run: make compose-test
   
-      - name: Lint code
+      - name: Lint code (inside Docker)
         shell: cmd
-        run: make lint
+        run: make compose-lint
 
 
   docker:
