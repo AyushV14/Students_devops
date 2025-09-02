@@ -90,7 +90,9 @@ compose-restart-all: compose-stop-all compose-run-api
 
 # Run tests inside the API container (CI-safe)
 compose-test:
+	docker-compose down -v || true
 	docker-compose run --rm api npm test
+	docker-compose down -v || true
 
 # Run lint inside the API container (CI-safe)
 compose-lint:
