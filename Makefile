@@ -10,11 +10,15 @@ run:
 dev:
 	npx nodemon src/index.js
 
-# Run unit tests
+# Run unit tests locally
 test:
 	npm test
 
-# Run database migrations
+# Run linter (ESLint)
+lint:
+	npx eslint src --ext .js
+
+# Run database migrations locally
 migrate:
 	mysql -u $(DB_USER) -p$(DB_PASSWORD) -h $(DB_HOST) $(DB_NAME) < migrations/create_students_table.sql
 
@@ -79,3 +83,23 @@ compose-stop-all:
 
 # Optional: Restart all services
 compose-restart-all: compose-stop-all compose-run-api
+
+# =============================
+# Step 4 - CI/CD Targets
+# =============================
+
+# Run tests inside the API container (CI-safe)
+compose-test:
+	docker-compose run --rm api npm test
+
+# Run lint inside the API container (CI-safe)
+compose-lint:
+	docker-compose run --rm api npx eslint src --ext .js
+
+# Build Docker image for pushing to registry
+docker-build:
+	docker build -t $(DOCKER_USERNAME)/students-api:latest .
+
+# Push Docker image to registry
+docker-push:
+	docker push $(DOCKER_USERNAME)/students-api:latest
