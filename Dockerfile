@@ -9,6 +9,7 @@ RUN npm install
 # Copy source code
 COPY src ./src
 COPY migrations ./migrations
+COPY tests ./tests
 
 # Stage 2: Production
 FROM node:20-alpine AS production
@@ -28,5 +29,5 @@ CMD ["node", "src/index.js"]
 # Stage 3: Development/Testing (includes dev dependencies)
 FROM builder AS development
 WORKDIR /app
-# This stage has all dependencies including Jest
+# This stage has all dependencies including Jest and the tests directory
 CMD ["npm", "start"]
