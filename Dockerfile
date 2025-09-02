@@ -1,29 +1,32 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
-
 # Set working directory
 WORKDIR /app
-
 # Copy package files
 COPY package*.json ./
-
-# Install dependencies
-RUN npm install --production
-
+# Install ALL dependencies (including dev dependencies for testing)
+RUN npm install
 # Copy source code
 COPY src ./src
 COPY migrations ./migrations
 
-# Stage 2: Run
-FROM node:20-alpine
-
+# Stage 2: Production
+FROM node:20-alpine AS production
 WORKDIR /app
-
-# Copy dependencies and source from builder stage
-COPY --from=builder /app ./
-
+# Copy package files
+COPY package*.json ./
+# Install only production dependencies
+RUN npm install --production
+# Copy source code
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/migrations ./migrations
 # Expose port
 EXPOSE 3000
-
 # Start server
 CMD ["node", "src/index.js"]
+
+# Stage 3: Development/Testing (includes dev dependencies)
+FROM builder AS development
+WORKDIR /app
+# This stage has all dependencies including Jest
+CMD ["npm", "start"]
