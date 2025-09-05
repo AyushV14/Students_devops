@@ -40,3 +40,6 @@ coverage/
 
 # Postman collection exports (optional, if you don't want to commit)
 # postman_collection.json
+
+
+.vagrant/
