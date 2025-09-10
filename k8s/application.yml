@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: students-api
+  namespace: student-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: students-api
+  template:
+    metadata:
+      labels:
+        app: students-api
+    spec:
+      initContainers:
+        - name: db-migration
+          image: mysql:8
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Waiting for MySQL to be ready..."
+              until mysqladmin ping -h ${DB_HOST} -u${DB_USER} -p${DB_PASSWORD} --silent; do
+                echo "MySQL is unavailable - sleeping"
+                sleep 2
+              done
+              echo "Running DB migration..."
+              mysql -h ${DB_HOST} -u${DB_USER} -p${DB_PASSWORD} ${DB_NAME} < /migrations/create_students_table.sql
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: DB_HOST
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: api-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
+
+      containers:
+        - name: students-api
+          image: students-api:1.0.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secret
+
+      volumes:
+        - name: migrations
+          configMap:
+            name: migration-sql

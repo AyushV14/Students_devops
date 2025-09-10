@@ -4,7 +4,7 @@
 # Student CRUD REST API
 
 A simple RESTful API for managing student records, built with **Node.js**, **Express**, and **MySQL**.
-Supports full CRUD operations, database migrations, environment-based configuration, unit testing, Docker setup, **Makefile automation**, **Vagrant provisioning**, and a Postman collection for easy API testing.
+Supports full CRUD operations, database migrations, environment-based configuration, unit testing, Docker setup, **Makefile automation**, **Vagrant provisioning**, **Kubernetes deployment with External Secrets**, and a Postman collection for easy API testing.
 
 ---
 
@@ -21,6 +21,9 @@ Supports full CRUD operations, database migrations, environment-based configurat
 * One-click local development using Docker Compose
 * **Makefile for automation (dev, Docker, Compose, CI/CD)**
 * **Vagrant + Nginx load balancer deployment (simulated production)**
+* **Kubernetes deployment with External Secrets Operator (ESO)**
+* **Database migrations run automatically via init container in Kubernetes**
+* Tested with **Minikube**; REST API is accessible via NodePort
 
 ---
 
@@ -42,6 +45,11 @@ student-api/
 │   └── create_students_table.sql
 ├── tests/
 │   └── student.test.js
+├── k8s/
+│   ├── application.yml
+│   ├── database.yml
+│   ├── secretstore.yaml
+│   └── externalsecret.yaml
 ├── .env
 ├── .gitignore
 ├── Makefile
@@ -91,7 +99,7 @@ PORT=3000
 ## Step 2: Run with Docker
 
 See existing section in your README (still valid).
-This covers: `docker build`, `docker run`, custom network, `.env` for containers.
+Covers: `docker build`, `docker run`, custom network, `.env` for containers.
 
 ---
 
@@ -168,29 +176,55 @@ server {
 
 ### 4. Verify Deployment
 
-* From host:
+```bash
+curl http://localhost:8080/api/v1/healthcheck
+curl http://localhost:8080/api/v1/students
+```
 
-  ```bash
-  curl http://localhost:8080/api/v1/healthcheck
-  curl http://localhost:8080/api/v1/students
-  ```
 * You should get **200 OK** and valid JSON responses.
 * Use Postman collection for further testing.
 
-### 5. Test Load Balancing
+---
 
-Check Nginx is forwarding requests to both APIs:
+## Step 6: Deploy on Kubernetes (Minikube)
+
+We also support **Kubernetes deployment** using **Minikube**.
+
+### 1. Apply Secrets & ConfigMaps
 
 ```bash
-docker logs students-api-1
-docker logs students-api-2
+kubectl apply -f k8s/secretstore.yaml
+kubectl apply -f k8s/externalsecret.yaml
+kubectl apply -f k8s/application.yml
+kubectl apply -f k8s/database.yml
 ```
 
-You should see requests hitting both containers.
+### 2. Verify Pods
+
+```bash
+kubectl get pods -n student-api
+```
+
+* The **MySQL pod** will start first.
+* The **API pod** uses an **init container** to run migrations (`create_students_table.sql`) before the application starts.
+* Secrets (`DB_USER`, `DB_PASSWORD`) are injected via **External Secrets Operator (ESO)**.
+
+### 3. Expose API
+
+API is exposed via NodePort:
+
+```bash
+minikube service students-api -n student-api
+```
+
+* Open the URL in your browser or use Postman to verify endpoints.
+* Test adding students and fetching the list to ensure migrations succeeded.
+
+> The Minikube setup confirms **Kubernetes deployment with proper secrets & migrations** is working.
 
 ---
 
-## Running Tests
+## Step 7: Running Tests
 
 Unit tests run locally or inside containers:
 
@@ -206,7 +240,9 @@ make compose-test
 
 * `.vagrant/` folder should **not** be committed to GitHub.
 * Only commit: `Vagrantfile`, `provision.sh`, `nginx.conf`.
-* This repo covers **dev → docker → compose → prod simulation** in one workflow.
+* `k8s/` folder contains all Kubernetes manifests.
+* Current secrets use **dummy/fake ESO provider**. For production, integrate with Vault or real secret store.
+* This repo covers **dev → docker → compose → prod simulation → Kubernetes** workflow in one repository.
 
 ---
 
@@ -215,4 +251,16 @@ make compose-test
 MIT License
 
 ---
+
+This update **tracks everything you’ve done so far**:
+
+* Docker + Compose ✅
+* Makefile automation ✅
+* Vagrant + Nginx load balancing ✅
+* Kubernetes deployment with **init container for migrations** ✅
+* Secrets via **ESO** ✅
+* Minikube testing ✅
+
+---
+
 

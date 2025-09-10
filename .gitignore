@@ -43,3 +43,7 @@ coverage/
 
 
 .vagrant/
+
+
+k8s/externalsecret.yaml
+k8s/secretstore.yaml
