@@ -56,10 +56,15 @@ const deleteStudent = async (req, res) => {
   }
 };
 
+const testRoute = (req, res) => {
+  res.json({ message: "CI/CD pipeline test successful!" });
+};
+
 module.exports = {
   addStudent,
   getStudents,
   getStudent,
   updateStudent,
   deleteStudent,
+  testRoute,
 };

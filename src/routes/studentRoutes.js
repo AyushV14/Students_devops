@@ -8,5 +8,7 @@ router.get("/", studentController.getStudents);
 router.get("/:id", studentController.getStudent);
 router.put("/:id", studentController.updateStudent);
 router.delete("/:id", studentController.deleteStudent);
+router.get("/test", studentController.testRoute);
+
 
 module.exports = router;
