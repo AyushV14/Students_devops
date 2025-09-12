@@ -4,7 +4,7 @@
 # Student CRUD REST API
 
 A simple RESTful API for managing student records, built with **Node.js**, **Express**, and **MySQL**.
-Supports full CRUD operations, database migrations, environment-based configuration, unit testing, Docker setup, **Makefile automation**, **Vagrant provisioning**, **Kubernetes deployment with External Secrets**, and a Postman collection for easy API testing.
+Supports full CRUD operations, database migrations, environment-based configuration, unit testing, Docker setup, **Makefile automation**, **Vagrant provisioning**, **Kubernetes deployment with Helm**, and a Postman collection for easy API testing.
 
 ---
 
@@ -18,12 +18,13 @@ Supports full CRUD operations, database migrations, environment-based configurat
 * Postman collection included for testing
 * Configuration through environment variables (`.env`)
 * Docker support for API and MySQL
-* One-click local development using Docker Compose
+* One-command local development using Docker Compose
 * **Makefile for automation (dev, Docker, Compose, CI/CD)**
 * **Vagrant + Nginx load balancer deployment (simulated production)**
-* **Kubernetes deployment with External Secrets Operator (ESO)**
+* **Kubernetes deployment using Helm charts**
 * **Database migrations run automatically via init container in Kubernetes**
-* Tested with **Minikube**; REST API is accessible via NodePort
+* Secrets injected via **Kubernetes Secret** or **External Secrets Operator (ESO)**
+* Tested with **Minikube**; REST API is accessible via NodePort or port-forward
 
 ---
 
@@ -45,11 +46,13 @@ student-api/
 │   └── create_students_table.sql
 ├── tests/
 │   └── student.test.js
-├── k8s/
-│   ├── application.yml
-│   ├── database.yml
-│   ├── secretstore.yaml
-│   └── externalsecret.yaml
+├── helm/
+│   ├── students-api/
+│   │   ├── Chart.yaml
+│   │   ├── values.yaml
+│   │   └── templates/
+│   └── mysql/
+│       └── (community chart or copy)
 ├── .env
 ├── .gitignore
 ├── Makefile
@@ -98,21 +101,40 @@ PORT=3000
 
 ## Step 2: Run with Docker
 
-See existing section in your README (still valid).
-Covers: `docker build`, `docker run`, custom network, `.env` for containers.
+Build and run the API with Docker:
+
+```bash
+docker build -t students-api .
+docker run --name students-api -p 3000:3000 --env-file .env students-api
+```
+
+Run MySQL container separately if needed:
+
+```bash
+docker run --name mysql -e MYSQL_ROOT_PASSWORD=<password> -e MYSQL_DATABASE=students -p 3306:3306 -d mysql:8
+```
 
 ---
 
 ## Step 3: Run with Docker Compose
 
-One-command setup for API + DB.
-Covered in your README with `make compose-*` targets.
+One-command setup for API + MySQL:
+
+```bash
+docker-compose up -d
+```
+
+Check logs:
+
+```bash
+docker-compose logs -f students-api
+```
 
 ---
 
 ## Step 4: Makefile Automation
 
-All repetitive commands (npm, docker, docker-compose) are automated via the **Makefile**.
+All repetitive commands are automated via the **Makefile**.
 
 Some useful targets:
 
@@ -126,14 +148,13 @@ Some useful targets:
 | `make compose-run-api` | Run API + DB with Docker Compose  |
 | `make docker-stop-all` | Stop & remove containers          |
 
-> The Makefile enables **consistent commands** across dev, Docker, and Compose.
+> The Makefile ensures **consistent commands** across development, Docker, and Compose.
 
 ---
 
 ## Step 5: Deploy on Vagrant (Bare Metal Simulation)
 
 This simulates a **production-like environment** inside a VM.
-It provisions Docker, runs containers, and sets up **Nginx for load balancing**.
 
 ### 1. Start the Vagrant VM
 
@@ -144,8 +165,7 @@ vagrant ssh
 
 ### 2. Provisioning
 
-The VM is provisioned automatically via `provision.sh`.
-It installs:
+The VM is provisioned automatically via `provision.sh`. It installs:
 
 * Docker + Docker Compose
 * MySQL container
@@ -154,8 +174,7 @@ It installs:
 
 ### 3. Nginx Configuration
 
-The `nginx.conf` is included in the repo.
-It load balances across two API containers:
+The `nginx.conf` is included in the repo. It load balances across two API containers:
 
 ```
 upstream api_servers {
@@ -186,47 +205,71 @@ curl http://localhost:8080/api/v1/students
 
 ---
 
-## Step 6: Deploy on Kubernetes (Minikube)
+## Step 6: Deploy on Kubernetes using Helm Charts
 
-We also support **Kubernetes deployment** using **Minikube**.
+We now deploy the **entire stack using Helm charts**.
 
-### 1. Apply Secrets & ConfigMaps
+### 1. Install Helm (if not installed)
 
 ```bash
-kubectl apply -f k8s/secretstore.yaml
-kubectl apply -f k8s/externalsecret.yaml
-kubectl apply -f k8s/application.yml
-kubectl apply -f k8s/database.yml
+brew install helm       # macOS
+choco install kubernetes-helm  # Windows (Chocolatey)
 ```
 
-### 2. Verify Pods
+### 2. Deploy MySQL via Helm
+
+```bash
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm upgrade --install mysql bitnami/mysql -n student-api --create-namespace \
+    --set auth.rootPassword=rootpassword,auth.database=students
+```
+
+### 3. Deploy Students API via Helm
+
+```bash
+helm upgrade --install students-api ./helm/students-api -n student-api
+```
+
+* The API deployment uses an **init container** to run migrations (`create_students_table.sql`) before starting the app.
+* Secrets (`DB_PASSWORD`) are injected via **Kubernetes Secret**.
+
+### 4. Verify Pods
 
 ```bash
 kubectl get pods -n student-api
 ```
 
-* The **MySQL pod** will start first.
-* The **API pod** uses an **init container** to run migrations (`create_students_table.sql`) before the application starts.
-* Secrets (`DB_USER`, `DB_PASSWORD`) are injected via **External Secrets Operator (ESO)**.
+* MySQL pod should be **Running** first.
+* Students API pod should complete the **init container successfully** and then start running.
 
-### 3. Expose API
+### 5. Access API
 
-API is exposed via NodePort:
+API is exposed via NodePort or port-forward:
 
 ```bash
-minikube service students-api -n student-api
+kubectl port-forward deployment/students-api 3000:3000 -n student-api
 ```
 
-* Open the URL in your browser or use Postman to verify endpoints.
-* Test adding students and fetching the list to ensure migrations succeeded.
+* Test endpoints in Postman or curl:
 
-> The Minikube setup confirms **Kubernetes deployment with proper secrets & migrations** is working.
+```bash
+POST http://127.0.0.1:3000/api/v1/students
+{
+  "name": "John Doe",
+  "age": 20,
+  "email": "johndoe@example.com"
+}
+
+GET http://127.0.0.1:3000/api/v1/students
+```
+
+> API is now fully functional with **Helm deployment** and migrations applied automatically.
 
 ---
 
 ## Step 7: Running Tests
 
-Unit tests run locally or inside containers:
+Run unit tests locally or inside containers:
 
 ```bash
 npm test
@@ -238,11 +281,14 @@ make compose-test
 
 ## Notes
 
-* `.vagrant/` folder should **not** be committed to GitHub.
-* Only commit: `Vagrantfile`, `provision.sh`, `nginx.conf`.
-* `k8s/` folder contains all Kubernetes manifests.
-* Current secrets use **dummy/fake ESO provider**. For production, integrate with Vault or real secret store.
-* This repo covers **dev → docker → compose → prod simulation → Kubernetes** workflow in one repository.
+* Only commit the `helm/` folder, `Vagrantfile`, `provision.sh`, `nginx.conf`.
+* Secrets in Helm/Minikube use dummy passwords—replace with real credentials for production.
+* This setup covers **dev → Docker → Compose → Vagrant → Helm/Kubernetes** workflow.
+* The API now works correctly because we fixed:
+
+  * **DB connection and password issues**
+  * **Init container for migrations**
+  * **Helm values & secret injection**
 
 ---
 
@@ -251,16 +297,3 @@ make compose-test
 MIT License
 
 ---
-
-This update **tracks everything you’ve done so far**:
-
-* Docker + Compose ✅
-* Makefile automation ✅
-* Vagrant + Nginx load balancing ✅
-* Kubernetes deployment with **init container for migrations** ✅
-* Secrets via **ESO** ✅
-* Minikube testing ✅
-
----
-
-

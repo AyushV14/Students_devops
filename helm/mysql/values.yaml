@@ -1,0 +1,9 @@
+auth:
+  rootPassword: rootpassword
+  database: students
+  username: student_user
+  password: student_pass
+
+primary:
+  persistence:
+    enabled: false

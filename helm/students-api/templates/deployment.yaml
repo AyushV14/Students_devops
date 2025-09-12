@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+    spec:
+      initContainers:
+        - name: db-migration
+          image: mysql:8
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Waiting for MySQL to be ready..."
+              until mysqladmin ping -h ${DB_HOST} -uroot -p${DB_PASSWORD} --silent; do
+                echo "MySQL is unavailable - sleeping"
+                sleep 2
+              done
+
+              echo "Creating database if not exists..."
+              mysql -h ${DB_HOST} -uroot -p${DB_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME};"
+
+              echo "Running DB migration..."
+              mysql -h ${DB_HOST} -uroot -p${DB_PASSWORD} ${DB_NAME} < /migrations/create_students_table.sql
+          env:
+            - name: DB_HOST
+              value: mysql
+            - name: DB_NAME
+              value: students
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql
+                  key: mysql-root-password
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
+
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          env:
+            - name: DB_HOST
+              value: mysql
+            - name: DB_NAME
+              value: students
+            - name: DB_USER
+              value: root
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql
+                  key: mysql-root-password
+
+      volumes:
+        - name: migrations
+          configMap:
+            name: migration-sql
