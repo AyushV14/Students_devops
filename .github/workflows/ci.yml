@@ -5,19 +5,17 @@ on:
     paths:
       - 'src/**'
       - 'migrations/**'
-  workflow_dispatch:   # manual trigger
+  workflow_dispatch:
 
 jobs:
   build-test-lint:
     runs-on: self-hosted
     env:
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       DB_NAME: ${{ secrets.DB_NAME }}
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
-  
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -29,8 +27,7 @@ jobs:
           echo DB_USER=${{ secrets.DB_USER }} >> .env
           echo DB_PASSWORD=${{ secrets.DB_PASSWORD }} >> .env
           echo DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }} >> .env
-      
-      # Still install dependencies on host (for linting tools etc.)
+
       - name: Install dependencies
         shell: cmd
         run: npm install
@@ -38,24 +35,62 @@ jobs:
       - name: Build API (Docker)
         shell: cmd
         run: make compose-build-api
-  
+
       - name: Run tests (inside Docker)
         shell: cmd
         run: make compose-test
-  
+
       - name: Lint code (inside Docker)
         shell: cmd
         run: make compose-lint
 
+  update-version:
+    runs-on: self-hosted
+    needs: build-test-lint
+    outputs:
+      NEW_VERSION: ${{ steps.bump.outputs.NEW_VERSION }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Bump semantic version
+        id: bump
+        shell: pwsh
+        run: |
+          $version = Get-Content .version
+          $parts = $version.Split('.')
+          $major = [int]$parts[0]
+          $minor = [int]$parts[1]
+          $patch = [int]$parts[2] + 1
+          $newVersion = "$major.$minor.$patch"
+          echo "NEW_VERSION=$newVersion" >> $env:GITHUB_ENV
+          Set-Content .version $newVersion
+          echo "::set-output name=NEW_VERSION::$newVersion"
+
+      - name: Update Helm values.yaml
+        shell: pwsh
+        run: |
+          (Get-Content helm/students-api/values.yaml) -replace 'tag:.*', "tag: `"${{ env.NEW_VERSION }}`"" | Set-Content helm/students-api/values.yaml
+          (Get-Content helm/students-api/values.yaml) -replace 'pullPolicy:.*', 'pullPolicy: IfNotPresent' | Set-Content helm/students-api/values.yaml
+
+      - name: Commit and push changes
+        run: |
+          git add .version helm/students-api/values.yaml
+          git commit -m "Bump version to ${{ env.NEW_VERSION }}"
+          git push origin main
 
   docker:
     runs-on: self-hosted
-    needs: build-test-lint
+    needs: update-version
     env:
-      DB_NAME: ${{ secrets.DB_NAME }}
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      IMAGE_TAG: ${{ needs.update-version.outputs.NEW_VERSION }}
 
     steps:
       - name: Checkout code
@@ -67,18 +102,12 @@ jobs:
           set DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}
           docker login -u ${{ secrets.DOCKER_USERNAME }} --password %DOCKER_PASSWORD%
 
-
-
       - name: Build Docker image
         shell: cmd
-        run: make docker-build DOCKER_USERNAME=%DOCKER_USERNAME%
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          docker build -t %DOCKER_USERNAME%/students-api:%IMAGE_TAG% .
 
       - name: Push Docker image
         shell: cmd
-        run: make docker-push DOCKER_USERNAME=%DOCKER_USERNAME%
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          docker push %DOCKER_USERNAME%/students-api:%IMAGE_TAG%

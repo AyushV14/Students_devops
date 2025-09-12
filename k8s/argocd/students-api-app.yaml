@@ -1,0 +1,22 @@
+# k8s/argocd/students-api-app.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: students-api
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/AyushV14/Students_devops.git'
+    targetRevision: main   # or your branch
+    path: helm/students-api
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: student-api
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,9 +1,9 @@
 replicaCount: 2
 
 image:
-  repository: students-api
-  tag: "1.0.0"
-  pullPolicy: Never
+  repository: ayushvik12/students-api
+  tag: "1.0.0"          
+  pullPolicy: IfNotPresent
 
 service:
   type: NodePort
