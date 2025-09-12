@@ -91,7 +91,8 @@ compose-debug:
 # Run tests inside the API container (CI-safe)
 compose-test:
 	docker-compose down -v || true
-	docker-compose build --build-arg STAGE=development api
+	docker-compose build --target development api
+	docker-compose up -d db
 	docker-compose run --rm api npm test
 	docker-compose down -v || true
 
