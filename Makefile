@@ -91,10 +91,8 @@ compose-debug:
 # Run tests inside the API container (CI-safe)
 compose-test:
 	docker-compose down -v || true
-	docker build --target development -t students-api-dev .
-	docker run --rm --network students_devops_app-network \
-	-e DB_USER=$$DB_USER -e DB_PASSWORD=$$DB_PASSWORD -e DB_NAME=$$DB_NAME \
-	students-api-dev npm test
+	docker-compose build --build-arg STAGE=development api
+	docker-compose run --rm api npm test
 	docker-compose down -v || true
 
 # Run lint inside the API container (CI-safe)
