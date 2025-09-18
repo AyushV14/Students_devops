@@ -74,12 +74,12 @@ jobs:
           endlocal
 
       - name: Update Helm values.yaml
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass
         run: |
-          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
           (Get-Content "helm/students-api/values.yaml") `
             -replace 'tag:.*', "  tag: `"$env:NEW_VERSION`"" |
           Set-Content "helm/students-api/values.yaml"
+
 
       - name: Commit and push changes
         shell: cmd
