@@ -55,7 +55,7 @@ jobs:
 
       - name: Bump semantic version
         id: bump
-        shell: pwsh
+        shell: powershell
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
           $version = Get-Content .version
@@ -64,19 +64,19 @@ jobs:
           $minor = [int]$parts[1]
           $patch = [int]$parts[2] + 1
           $newVersion = "$major.$minor.$patch"
-          echo "NEW_VERSION=$newVersion" >> $env:GITHUB_ENV
+          echo "NEW_VERSION=$newVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Set-Content .version $newVersion
           echo "::set-output name=NEW_VERSION::$newVersion"
 
       - name: Update Helm values.yaml
-        shell: pwsh
+        shell: powershell
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
           (Get-Content helm/students-api/values.yaml) -replace 'tag:.*', "tag: `"$env:NEW_VERSION`"" | Set-Content helm/students-api/values.yaml
           (Get-Content helm/students-api/values.yaml) -replace 'pullPolicy:.*', 'pullPolicy: IfNotPresent' | Set-Content helm/students-api/values.yaml
 
       - name: Commit and push changes
-        shell: pwsh
+        shell: powershell
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
