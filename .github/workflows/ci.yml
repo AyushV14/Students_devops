@@ -60,7 +60,7 @@ jobs:
 
       - name: Bump semantic version
         id: bump
-        shell: pwsh
+        shell: bash
         run: |
           $version = Get-Content .version
           $parts = $version.Split('.')
@@ -73,7 +73,7 @@ jobs:
           echo "::set-output name=NEW_VERSION::$newVersion"
 
       - name: Update Helm values.yaml
-        shell: pwsh
+        shell: bash
         run: |
           (Get-Content helm/students-api/values.yaml) -replace 'tag:.*', "tag: `"${{ env.NEW_VERSION }}`"" | Set-Content helm/students-api/values.yaml
           (Get-Content helm/students-api/values.yaml) -replace 'pullPolicy:.*', 'pullPolicy: IfNotPresent' | Set-Content helm/students-api/values.yaml
