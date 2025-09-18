@@ -2,6 +2,8 @@ name: CI Pipeline
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'src/**'
       - 'migrations/**'
@@ -47,6 +49,8 @@ jobs:
   update-version:
     runs-on: self-hosted
     needs: build-test-lint
+    permissions:
+      contents: write
     outputs:
       NEW_VERSION: ${{ steps.bump.outputs.NEW_VERSION }}
     steps:
