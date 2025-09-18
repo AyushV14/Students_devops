@@ -53,15 +53,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Configure Git
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-
       - name: Bump semantic version
         id: bump
-        shell: bash
+        shell: pwsh
         run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
           $version = Get-Content .version
           $parts = $version.Split('.')
           $major = [int]$parts[0]
@@ -73,15 +69,20 @@ jobs:
           echo "::set-output name=NEW_VERSION::$newVersion"
 
       - name: Update Helm values.yaml
-        shell: bash
+        shell: pwsh
         run: |
-          (Get-Content helm/students-api/values.yaml) -replace 'tag:.*', "tag: `"${{ env.NEW_VERSION }}`"" | Set-Content helm/students-api/values.yaml
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          (Get-Content helm/students-api/values.yaml) -replace 'tag:.*', "tag: `"$env:NEW_VERSION`"" | Set-Content helm/students-api/values.yaml
           (Get-Content helm/students-api/values.yaml) -replace 'pullPolicy:.*', 'pullPolicy: IfNotPresent' | Set-Content helm/students-api/values.yaml
 
       - name: Commit and push changes
+        shell: pwsh
         run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
           git add .version helm/students-api/values.yaml
-          git commit -m "Bump version to ${{ env.NEW_VERSION }}"
+          git commit -m "Bump version to $env:NEW_VERSION" || echo "No changes to commit"
           git push origin main
 
   docker:
