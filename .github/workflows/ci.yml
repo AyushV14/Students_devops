@@ -74,12 +74,9 @@ jobs:
           endlocal
 
       - name: Update Helm values.yaml
-        shell: pwsh
+        shell: bash
         run: |
-          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-          (Get-Content "helm/students-api/values.yaml") `
-            -replace 'tag:.*', "  tag: `"$env:NEW_VERSION`"" |
-          Set-Content "helm/students-api/values.yaml"
+          sed -i "s/tag:.*/tag: \"$NEW_VERSION\"/" helm/students-api/values.yaml
 
       - name: Commit and push changes
         shell: cmd
