@@ -74,23 +74,11 @@ jobs:
           endlocal
 
       - name: Update Helm values.yaml
-        shell: cmd
+        shell: powershell
         run: |
-          setlocal enabledelayedexpansion
-          for /f "tokens=* delims=" %%x in (helm\students-api\values.yaml) do (
-            set line=%%x
-            echo !line! | findstr /c:"tag:" >nul && (
-              echo tag: "%NEW_VERSION%"
-            ) || (
-              echo !line! | findstr /c:"pullPolicy:" >nul && (
-                echo pullPolicy: IfNotPresent
-              ) || (
-                echo !line!
-              )
-            )
-          ) > helm\students-api\values.tmp
-          move /y helm\students-api\values.tmp helm\students-api\values.yaml
-          endlocal
+          (Get-Content "helm/students-api/values.yaml") `
+            -replace 'tag:.*', "  tag: `"$env:NEW_VERSION`"" |
+          Set-Content "helm/students-api/values.yaml"
 
       - name: Commit and push changes
         shell: cmd
