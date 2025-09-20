@@ -282,8 +282,9 @@ GET http://127.0.0.1:3000/api/v1/students
 
 Below is a screenshot of ArgoCD UI showing all pods **running and healthy**:
 
-![ArgoCD UI](<img width="1897" height="883" alt="image" src="https://github.com/user-attachments/assets/3ff1c88f-debb-4a54-8631-1ee2a63a4e04" />
-)
+ArgoCD UI
+<img width="1897" height="883" alt="image" src="https://github.com/user-attachments/assets/3ff1c88f-debb-4a54-8631-1ee2a63a4e04" />
+
 
 * You should see **students-api** and **MySQL** pods deployed correctly.
 * ArgoCD automatically handles updates when the `values.yaml` tag changes.
