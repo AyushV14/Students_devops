@@ -74,7 +74,7 @@ jobs:
           endlocal
 
       - name: Update Helm values.yaml
-        shell: bash
+        shell: powershell
         run: |
           (Get-Content "helm/students-api/values.yaml") `
             -replace 'tag:.*', "  tag: `"$env:NEW_VERSION`"" |
@@ -91,7 +91,6 @@ jobs:
           git add .version helm/students-api/values.yaml
           git commit -m "Bump version to %NEW_VERSION%" || echo No changes to commit
           git push origin main
-
 
   docker:
     runs-on: self-hosted
