@@ -25,12 +25,14 @@ Supports full CRUD operations, database migrations, environment-based configurat
 * **Database migrations run automatically via init container in Kubernetes**
 * Secrets injected via **Kubernetes Secret** or **External Secrets Operator (ESO)**
 * Tested with **Minikube**; REST API is accessible via NodePort or port-forward
+* **One-click deployment using ArgoCD** for GitOps workflow
 
 ---
 
 ## Project Structure
 
 ```
+
 student-api/
 ├── src/
 │   ├── routes/
@@ -43,7 +45,7 @@ student-api/
 │   │   └── db.js
 │   └── index.js
 ├── migrations/
-│   └── create_students_table.sql
+│   └── create\_students\_table.sql
 ├── tests/
 │   └── student.test.js
 ├── helm/
@@ -53,6 +55,9 @@ student-api/
 │   │   └── templates/
 │   └── mysql/
 │       └── (community chart or copy)
+├── k8s/
+│   └── argocd/
+│       └── students-api-app.yaml
 ├── .env
 ├── .gitignore
 ├── Makefile
@@ -63,8 +68,9 @@ student-api/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── README.md
-└── postman_collection.json
-```
+└── postman\_collection.json
+
+````
 
 ---
 
@@ -75,7 +81,7 @@ student-api/
 ```bash
 git clone https://github.com/AyushV14/Students_devops
 cd Students_devops
-```
+````
 
 ### 2. Install dependencies (optional for local run)
 
@@ -263,11 +269,27 @@ POST http://127.0.0.1:3000/api/v1/students
 GET http://127.0.0.1:3000/api/v1/students
 ```
 
-> API is now fully functional with **Helm deployment** and migrations applied automatically.
+---
+
+## Step 7: One-Click Deployment via ArgoCD
+
+* ArgoCD watches your GitHub repository for changes.
+* Helm charts in the repo are considered the **source of truth**.
+* Image tags updated via CI pipeline are **automatically synced** by ArgoCD.
+* Pods are scheduled on the `dependent_services` node.
+
+### Verification
+
+Below is a screenshot of ArgoCD UI showing all pods **running and healthy**:
+
+![ArgoCD UI](https://i.ibb.co/wr0szsWB)
+
+* You should see **students-api** and **MySQL** pods deployed correctly.
+* ArgoCD automatically handles updates when the `values.yaml` tag changes.
 
 ---
 
-## Step 7: Running Tests
+## Step 8: Running Tests
 
 Run unit tests locally or inside containers:
 
@@ -281,14 +303,15 @@ make compose-test
 
 ## Notes
 
-* Only commit the `helm/` folder, `Vagrantfile`, `provision.sh`, `nginx.conf`.
+* Only commit the `helm/` folder, `Vagrantfile`, `provision.sh`, `nginx.conf`, and ArgoCD manifests (`k8s/argocd/`).
 * Secrets in Helm/Minikube use dummy passwords—replace with real credentials for production.
-* This setup covers **dev → Docker → Compose → Vagrant → Helm/Kubernetes** workflow.
+* This setup covers **dev → Docker → Compose → Vagrant → Helm/Kubernetes → ArgoCD** workflow.
 * The API now works correctly because we fixed:
 
   * **DB connection and password issues**
   * **Init container for migrations**
   * **Helm values & secret injection**
+  * **ArgoCD auto-sync and node affinity**
 
 ---
 
