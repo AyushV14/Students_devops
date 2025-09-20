@@ -16,6 +16,8 @@ spec:
       labels:
         app: {{ .Chart.Name }}
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: dependent_services   
       initContainers:
         - name: db-migration
           image: mysql:8
