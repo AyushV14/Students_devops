@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: ayushvik12/students-api
-    tag: "1.0.1"
+  tag: "1.0.1"
   pullPolicy: IfNotPresent
 
 service:

@@ -76,7 +76,7 @@ jobs:
       - name: Update Helm values.yaml
         shell: powershell
         run: |
-          (Get-Content "helm/students-api/values.yaml") -replace 'tag:.*', "  tag: `"$env:NEW_VERSION`"" |
+          (Get-Content "helm/students-api/values.yaml") -replace '^\s*tag:.*', "  tag: `"$env:NEW_VERSION`"" |
             Set-Content "helm/students-api/values.yaml"
         env:
           NEW_VERSION: ${{ steps.bump.outputs.NEW_VERSION }}
